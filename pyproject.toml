@@ -1,0 +1,31 @@
+[project]
+name = "regscraper"
+version = "0.2.0"
+description = "Async, robots-aware scraper for regulatory content with LLM extraction"
+authors = [{ name = "Your Org" }]
+requires-python = ">=3.11"
+dependencies = [
+"httpx[http2]>=0.27",
+"playwright>=1.47",
+"trafilatura>=1.10",
+"pymupdf>=1.24", # Better PDF extraction
+"pytesseract>=0.3",
+"pillow>=10.0",
+"mammoth>=1.6", # .doc -> text
+"python-docx>=1.1",
+"feedparser>=6.0",
+"pydantic>=2.7",
+"pydantic-settings>=2.3",
+"tenacity>=9.0",
+"aiosqlite>=0.20",
+"openai>=1.40.0", # AsyncOpenAI client
+"python-dotenv>=1.0",
+]
+
+
+[tool.ruff]
+line-length = 100
+
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
