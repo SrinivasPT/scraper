@@ -15,6 +15,10 @@ class RobotsTxtChecker:
 
     async def is_allowed(self, url: str) -> bool:
         """Check if URL is allowed by robots.txt."""
+        # Allow RSS feeds regardless of robots.txt restrictions
+        if self._is_rss_feed(url):
+            return True
+
         domain = self._get_domain(url)
         parser = await self._get_robots_parser(domain)
         return parser.can_fetch(self.user_agent, url)
@@ -27,6 +31,18 @@ class RobotsTxtChecker:
     def _get_domain(self, url: str) -> str:
         """Extract domain from URL."""
         return urlparse(url).netloc.lower()
+
+    def _is_rss_feed(self, url: str) -> bool:
+        """Check if URL appears to be an RSS feed."""
+        url_lower = url.lower()
+        # Check for common RSS feed indicators
+        return (
+            url_lower.endswith((".rss", ".xml"))
+            or "/rss" in url_lower
+            or "/feed" in url_lower
+            or "rss.php" in url_lower
+            or "feed.xml" in url_lower
+        )
 
     async def _get_robots_parser(self, domain: str) -> RobotFileParser:
         """Get robots.txt parser for domain (cached)."""
@@ -50,7 +66,7 @@ class RobotsTxtChecker:
                     parser.set_url(robots_url)
                     parser.parse(["User-agent: *", "Allow: /"])
 
-        except Exception:
+        except (httpx.RequestError, httpx.HTTPStatusError, TimeoutError):
             # Default: allow all on error
             parser.set_url(robots_url)
             parser.parse(["User-agent: *", "Allow: /"])
