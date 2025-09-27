@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Optional, Protocol
+from typing import Any, Protocol
 
 
 class ContentType(Enum):
@@ -25,7 +25,7 @@ class DownloadResult:
 class ExtractionResult:
     """Result of text extraction."""
 
-    def __init__(self, text: str, metadata: dict | None = None) -> None:
+    def __init__(self, text: str, metadata: dict[str, Any] | None = None) -> None:
         self.text = text
         self.metadata = metadata or {}
         self.length = len(text)
@@ -52,7 +52,7 @@ class Document:
         self.document_type = document_type
         self.summary = summary
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "source_url": self.source_url,
             "title": self.title,
@@ -64,7 +64,7 @@ class Document:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Document":
+    def from_dict(cls, data: dict[str, Any]) -> "Document":
         """Create Document from dictionary."""
         return cls(
             source_url=data["source_url"],
@@ -126,8 +126,8 @@ class DocumentStorage(ABC):
         """Store document and return storage path/ID."""
 
 
-class DocumentProcessor(ABC):
-    """Abstract base class for complete document processing pipeline."""
+class DocumentProcessor:
+    """Base class for complete document processing pipeline."""
 
     def __init__(
         self,
