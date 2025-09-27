@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from regscraper.interfaces import ContentType, TextExtractor
 
 from .docx import DocxTextExtractor
@@ -9,7 +11,7 @@ class ExtractorFactory:
     """Factory for creating text extractors based on content type."""
 
     def __init__(self) -> None:
-        self._extractors = {
+        self._extractors: dict[ContentType, TextExtractor] = {
             ContentType.PDF: PdfTextExtractor(),
             ContentType.DOCX: DocxTextExtractor(),
             ContentType.HTML: HtmlTextExtractor(),

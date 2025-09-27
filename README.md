@@ -40,24 +40,29 @@ py -m regscraper "https://example.com/document.pdf"
 py -m regscraper "https://example.com/document.pdf" --format json
 
 # Save output to file
-py -m regscraper "https://example.com/document.pdf" --save output.txt
+py -m regscraper "https://example.com/document.pdf" --output output.txt
 
 # JSON output saved to file
-py -m regscraper "https://example.com/document.pdf" --format json --save output.json
+py -m regscraper "https://example.com/document.pdf" --format json --output output.json
 
 # Add delay between requests
-py -m regscraper "https://example.com/document.pdf" --delay 2
+py -m regscraper "https://example.com/document.pdf" --delay 5.0
 
 # Quiet mode (suppress logging)
 py -m regscraper "https://example.com/document.pdf" --quiet
+
+# Verbose logging
+py -m regscraper "https://example.com/document.pdf" --verbose
 ```
 
 #### CLI Options
 
 - `url`: The URL to scrape (required)
 - `--format`: Output format: 'text' (default) or 'json'
-- `--save`: Save output to specified file
-- `--delay`: Delay between requests in seconds (default: 1)
+- `--output`: Save output to specified file
+- `--delay`: Delay between requests in seconds (default: 2.0)
+- `--user-agent`: User agent string (default: RegScraper/2.0)
+- `--verbose`: Enable verbose logging
 - `--quiet`: Suppress logging output
 
 ### Library Usage
@@ -68,31 +73,28 @@ Use the library programmatically in your Python code:
 import asyncio
 from regscraper.downloader.factory import DownloaderFactory
 from regscraper.extractor.factory import ExtractorFactory
-from regscraper.infrastructure.robots import RobotsChecker
-from regscraper.infrastructure.throttle import RequestThrottler
+from regscraper.infrastructure import DomainThrottler, RobotsTxtChecker, ThrottledRobotsChecker
 
 async def scrape_document(url: str):
-    # Initialize components
-    robots_checker = RobotsChecker()
-    throttler = RequestThrottler(delay=1.0)
-
     try:
-        # Check robots.txt compliance
-        can_fetch = await robots_checker.can_fetch(url)
-        if not can_fetch:
-            print(f"Robots.txt disallows fetching: {url}")
-            return
+        # Set up infrastructure
+        robots_checker = RobotsTxtChecker("RegScraper/2.0")
+        throttler = DomainThrottler(default_delay=2.0)
+        compliance = ThrottledRobotsChecker(robots_checker, throttler)
 
-        # Apply throttling
-        await throttler.wait()
+        # Create factories
+        site_overrides = {}  # Configure as needed
+        downloader_factory = DownloaderFactory(site_overrides)
+        extractor_factory = ExtractorFactory()
 
         # Download content
-        downloader = DownloaderFactory.create_downloader("http")
+        downloader = downloader_factory.create_downloader(url)
         download_result = await downloader.download(url)
 
         # Extract content
-        extractor = ExtractorFactory.create_extractor(download_result.content_type)
-        extraction_result = await extractor.extract(download_result.content)
+        content_type = download_result.content_type or ""
+        extractor = extractor_factory.create_extractor(url, content_type)
+        extraction_result = await extractor.extract(download_result)
 
         print(f"Extracted {len(extraction_result.text)} characters")
         print(extraction_result.text[:500] + "..." if len(extraction_result.text) > 500 else extraction_result.text)
@@ -128,9 +130,9 @@ The library is organized into several key modules:
 - **ExtractorFactory**: Factory pattern for content type-specific extraction
 
 ### Infrastructure Module (`regscraper.infrastructure`)
-- **RobotsChecker**: Validates robots.txt compliance
-- **RequestThrottler**: Manages request delays
-- **DomainValidator**: URL validation utilities
+- **RobotsTxtChecker**: Validates robots.txt compliance with caching
+- **DomainThrottler**: Per-domain rate limiting with semaphores
+- **ThrottledRobotsChecker**: Combined compliance checking and throttling
 
 ## Dependencies
 
@@ -221,3 +223,6 @@ The library includes comprehensive error handling for:
 ## License
 
 This project is open source. Please check the license file for details.
+
+## Test
+py -m pytest tests -v

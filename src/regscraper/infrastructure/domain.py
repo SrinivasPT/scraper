@@ -1,4 +1,5 @@
 import asyncio
+import time
 from urllib.parse import urlparse
 
 
@@ -9,6 +10,7 @@ class DomainThrottler:
         self.default_delay = default_delay
         self.default_concurrency = default_concurrency
         self._domain_locks: dict[str, asyncio.Semaphore] = {}
+        self._domain_delays: dict[str, float] = {}  # Store per-domain delays
         self._last_request: dict[str, float] = {}
         self._global_semaphore = asyncio.Semaphore(10)  # Global limit
 
@@ -41,6 +43,7 @@ class DomainThrottler:
     def configure_domain(self, domain: str, delay: float, concurrency: int) -> None:
         """Configure specific domain settings."""
         self._domain_locks[domain] = asyncio.Semaphore(concurrency)
+        self._domain_delays[domain] = delay
 
     def _get_domain(self, url: str) -> str:
         """Extract domain from URL."""
@@ -54,13 +57,14 @@ class DomainThrottler:
 
     async def _enforce_delay(self, domain: str) -> None:
         """Enforce delay between requests to same domain."""
-        import time
-
         now = time.time()
+
+        # Use domain-specific delay if configured, otherwise use default
+        delay = self._domain_delays.get(domain, self.default_delay)
 
         if domain in self._last_request:
             elapsed = now - self._last_request[domain]
-            if elapsed < self.default_delay:
-                await asyncio.sleep(self.default_delay - elapsed)
+            if elapsed < delay:
+                await asyncio.sleep(delay - elapsed)
 
         self._last_request[domain] = time.time()

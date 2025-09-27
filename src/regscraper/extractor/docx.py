@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import io
 
-import mammoth
-from docx import Document as DocxDocument
+import mammoth  # type: ignore[import-untyped]
+from docx import Document as DocxDocument  # type: ignore[import-untyped]
 
 from regscraper.interfaces import ContentType, DownloadResult, ExtractionResult, TextExtractor
 
@@ -11,7 +13,7 @@ class DocxTextExtractor(TextExtractor):
 
     async def extract(self, download_result: DownloadResult) -> ExtractionResult:
         """Extract text from DOCX/DOC content."""
-        metadata = {"format": "unknown", "paragraphs": 0}
+        metadata: dict[str, int | str] = {"format": "unknown", "paragraphs": 0}
 
         try:
             content_stream = io.BytesIO(download_result.content)
@@ -21,23 +23,23 @@ class DocxTextExtractor(TextExtractor):
 
             if is_doc_format:
                 # Use mammoth for .doc files
-                result = mammoth.extract_raw_text(content_stream)
-                text = (result.value or "").strip()
+                result = mammoth.extract_raw_text(content_stream)  # type: ignore[misc]
+                text = str(result.value or "").strip()  # type: ignore[misc]
                 metadata["format"] = "doc"
 
-                if result.messages:
-                    metadata["conversion_warnings"] = len(result.messages)
+                if result.messages:  # type: ignore[misc]
+                    metadata["conversion_warnings"] = len(result.messages)  # type: ignore[misc]
             else:
                 # Use python-docx for .docx files
-                doc = DocxDocument(content_stream)
-                paragraphs = [p.text for p in doc.paragraphs if p.text and p.text.strip()]
-                text = "\\n".join(paragraphs)
+                doc = DocxDocument(content_stream)  # type: ignore[misc]
+                paragraphs = [p.text for p in doc.paragraphs if p.text and p.text.strip()]  # type: ignore[misc]
+                text = "\n".join(paragraphs)
                 metadata["format"] = "docx"
                 metadata["paragraphs"] = len(paragraphs)
 
-        except Exception as e:
+        except (OSError, ValueError) as e:
             msg = f"DOCX text extraction failed: {e}"
-            raise RuntimeError(msg)
+            raise RuntimeError(msg) from e
 
         return ExtractionResult(text, metadata)
 

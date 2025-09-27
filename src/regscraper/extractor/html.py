@@ -1,6 +1,19 @@
+from __future__ import annotations
+
+import re
+
 import trafilatura
 
 from regscraper.interfaces import ContentType, DownloadResult, ExtractionResult, TextExtractor
+
+# Try to import BeautifulSoup - it's optional
+try:
+    from bs4 import BeautifulSoup  # type: ignore[import-untyped]
+
+    _has_beautifulsoup = True
+except ImportError:
+    BeautifulSoup = None  # type: ignore[misc,assignment]
+    _has_beautifulsoup = False
 
 
 class HtmlTextExtractor(TextExtractor):
@@ -25,16 +38,16 @@ class HtmlTextExtractor(TextExtractor):
                 extracted_text = self._basic_html_extraction(html_content)
                 extraction_method = "basic"
 
-            metadata = {
+            metadata: dict[str, int | str] = {
                 "original_length": len(html_content),
                 "extraction_method": extraction_method,
             }
 
             return ExtractionResult(extracted_text or "", metadata)
 
-        except Exception as e:
+        except (UnicodeDecodeError, ValueError) as e:
             msg = f"HTML text extraction failed: {e}"
-            raise RuntimeError(msg)
+            raise RuntimeError(msg) from e
 
     def can_handle(self, content_type: ContentType) -> bool:
         """Check if this extractor can handle HTML content."""
@@ -42,23 +55,22 @@ class HtmlTextExtractor(TextExtractor):
 
     def _basic_html_extraction(self, html_content: str) -> str:
         """Basic HTML text extraction as fallback."""
-        try:
-            from bs4 import BeautifulSoup
-
-            soup = BeautifulSoup(html_content, "html.parser")
+        if _has_beautifulsoup:
+            soup = BeautifulSoup(html_content, "html.parser")  # type: ignore[misc]
 
             # Remove script and style elements
-            for element in soup(["script", "style"]):
-                element.decompose()
+            for element in soup(["script", "style"]):  # type: ignore[misc]
+                element.decompose()  # type: ignore[misc]
 
-            return soup.get_text(separator="\\n", strip=True)
+            return soup.get_text(separator="\n", strip=True)  # type: ignore[misc]
 
-        except ImportError:
-            # If BeautifulSoup is not available, use very basic extraction
-            import re
+        # If BeautifulSoup is not available, use regex extraction
+        return self._regex_html_extraction(html_content)
 
-            # Remove HTML tags (very basic approach)
-            clean_text = re.sub(r"<[^>]+>", " ", html_content)
-            # Clean up whitespace
-            clean_text = re.sub(r"\\s+", " ", clean_text)
-            return clean_text.strip()
+    def _regex_html_extraction(self, html_content: str) -> str:
+        """Very basic HTML text extraction using regex."""
+        # Remove HTML tags (very basic approach)
+        clean_text = re.sub(r"<[^>]+>", " ", html_content)
+        # Clean up whitespace
+        clean_text = re.sub(r"\s+", " ", clean_text)
+        return clean_text.strip()
