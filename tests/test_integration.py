@@ -1,9 +1,11 @@
 """Integration test to verify the refactored components work together."""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+
+from regscraper.parser.docx_v2 import download_and_extract_docx_v2
 from regscraper.parser.pdf_v2 import download_and_extract_pdf_v2, extract_pdf_text
-from regscraper.parser.docx_v2 import download_and_extract_docx_v2, extract_docx_text
 
 
 class TestIntegration:
@@ -15,10 +17,7 @@ class TestIntegration:
         test_content = b"fake pdf content"
         expected_text = "Extracted PDF text"
 
-        with patch(
-            "regscraper.downloader.http_downloader.httpx.AsyncClient"
-        ) as mock_client, patch("fitz.open") as mock_fitz_open:
-
+        with patch("regscraper.downloader.http_downloader.httpx.AsyncClient") as mock_client, patch("fitz.open") as mock_fitz_open:
             # Mock HTTP download
             mock_response = MagicMock()
             mock_response.content = test_content
@@ -51,12 +50,10 @@ class TestIntegration:
         test_content = b"fake docx content"
         expected_text = "Extracted DOCX text"
 
-        with patch(
-            "regscraper.downloader.http_downloader.httpx.AsyncClient"
-        ) as mock_client, patch(
-            "regscraper.extractors.docx_extractor.Document"
-        ) as mock_document:
-
+        with (
+            patch("regscraper.downloader.http_downloader.httpx.AsyncClient") as mock_client,
+            patch("regscraper.extractors.docx_extractor.Document") as mock_document,
+        ):
             # Mock HTTP download
             mock_response = MagicMock()
             mock_response.content = test_content

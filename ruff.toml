@@ -1,46 +1,14 @@
-[project]
-name = "regscraper"
-version = "0.2.0"
-description = "Async, robots-aware scraper for regulatory content with LLM extraction"
-authors = [{ name = "Your Org" }]
-requires-python = ">=3.11"
-dependencies = [
-"httpx[http2]>=0.27",
-"playwright>=1.47",
-"trafilatura>=1.10",
-"pymupdf>=1.24", # Better PDF extraction
-"pytesseract>=0.3",
-"pillow>=10.0",
-"mammoth>=1.6", # .doc -> text
-"python-docx>=1.1",
-"feedparser>=6.0",
-"pydantic>=2.7",
-"pydantic-settings>=2.3",
-"tenacity>=9.0",
-"aiosqlite>=0.20",
-"openai>=1.40.0", # AsyncOpenAI client
-"python-dotenv>=1.0",
-]
+# Ruff configuration file
+# Alternative to pyproject.toml [tool.ruff] section
+# This file takes precedence over pyproject.toml if both exist
 
-[project.optional-dependencies]
-dev = [
-    "ruff>=0.8.0",
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.23.0",
-    "pytest-cov>=4.0.0",
-    "mypy>=1.8.0",
-    "types-requests",
-]
-
-
-[tool.ruff]
 # Main configuration
 line-length = 140
 target-version = "py311"
 respect-gitignore = true
 
-# Rules to enable
-[tool.ruff.lint]
+[lint]
+# Rule selection - comprehensive set for high code quality
 select = [
     "E",      # pycodestyle errors
     "W",      # pycodestyle warnings
@@ -96,7 +64,7 @@ select = [
     "RUF",    # Ruff-specific rules
 ]
 
-# Rules to ignore
+# Rules to ignore (with explanations)
 ignore = [
     "D100",    # Missing docstring in public module
     "D101",    # Missing docstring in public class
@@ -105,8 +73,6 @@ ignore = [
     "D104",    # Missing docstring in public package
     "D105",    # Missing docstring in magic method
     "D107",    # Missing docstring in __init__
-    "ANN101",  # Missing type annotation for self
-    "ANN102",  # Missing type annotation for cls
     "COM812",  # Trailing comma missing (conflicts with formatter)
     "ISC001",  # Implicit string concatenation (conflicts with formatter)
     "S101",    # Use of assert (common in tests)
@@ -117,11 +83,11 @@ ignore = [
     "FBT003",  # Boolean positional arg in function call
 ]
 
-# Allow fix for all enabled rules (when `--fix`) is provided.
+# Allow autofix for all enabled rules
 fixable = ["ALL"]
 unfixable = []
 
-# Exclude a variety of commonly ignored directories.
+# Exclude common directories
 exclude = [
     ".bzr",
     ".direnv",
@@ -150,8 +116,8 @@ exclude = [
     "venv",
 ]
 
-# Per-file ignores
-[tool.ruff.lint.per-file-ignores]
+[lint.per-file-ignores]
+# Per-file ignore patterns
 "tests/*" = [
     "S101",    # Use of assert
     "PLR2004", # Magic value used in comparison
@@ -163,37 +129,33 @@ exclude = [
     "F401",    # Imported but unused (re-exports)
 ]
 
-# Import sorting
-[tool.ruff.lint.isort]
+[lint.isort]
+# Import sorting configuration
 combine-as-imports = true
 force-wrap-aliases = true
 known-first-party = ["regscraper"]
 split-on-trailing-comma = true
 
-# Docstring settings
-[tool.ruff.lint.pydocstyle]
+[lint.pydocstyle]
+# Docstring convention
 convention = "google"
 
-# Pylint settings
-[tool.ruff.lint.pylint]
+[lint.pylint]
+# Pylint-style settings
 max-args = 8
 max-branches = 15
 max-returns = 8
 max-statements = 60
 
-# McCabe complexity
-[tool.ruff.lint.mccabe]
+[lint.mccabe]
+# Complexity settings
 max-complexity = 12
 
-# Formatting
-[tool.ruff.format]
+[format]
+# Code formatting options
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
 docstring-code-format = true
 docstring-code-line-length = "dynamic"
-
-
-[tool.pytest.ini_options]
-pythonpath = ["src"]

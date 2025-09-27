@@ -1,21 +1,22 @@
 """Integration tests demonstrating the new regscraper_v2 architecture."""
 
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
-from regscraper_v2.interfaces import (
-    DownloadResult,
-    ExtractionResult,
-    Document,
-    ContentType,
-)
+from regscraper_v2.downloaders.factory import DownloaderFactory
+from regscraper_v2.downloaders.implementations import HttpDownloader
+from regscraper_v2.extractors.factory import ExtractorFactory
 from regscraper_v2.infrastructure.compliance import (
-    RobotsTxtChecker,
     DomainThrottler,
+    RobotsTxtChecker,
     ThrottledRobotsChecker,
 )
-from regscraper_v2.downloaders.implementations import HttpDownloader
-from regscraper_v2.downloaders.factory import DownloaderFactory
-from regscraper_v2.extractors.factory import ExtractorFactory
+from regscraper_v2.interfaces import (
+    ContentType,
+    Document,
+    DownloadResult,
+    ExtractionResult,
+)
 
 
 class TestIntegrationScenarios:
@@ -36,22 +37,16 @@ class TestIntegrationScenarios:
         fake_pdf_content = b"fake pdf content"
 
         with patch.object(downloader, "download") as mock_download:
-            mock_download.return_value = DownloadResult(
-                fake_pdf_content, "application/pdf", "https://example.com/document.pdf"
-            )
+            mock_download.return_value = DownloadResult(fake_pdf_content, "application/pdf", "https://example.com/document.pdf")
 
             # Test download
-            download_result = await downloader.download(
-                "https://example.com/document.pdf"
-            )
+            download_result = await downloader.download("https://example.com/document.pdf")
             assert download_result.content == fake_pdf_content
             assert download_result.content_type == "application/pdf"
 
             # Test extractor selection
             extractor_factory = ExtractorFactory()
-            extractor = extractor_factory.create_extractor(
-                "https://example.com/document.pdf", "application/pdf"
-            )
+            extractor = extractor_factory.create_extractor("https://example.com/document.pdf", "application/pdf")
 
             # Mock PDF extraction
             with patch("fitz.open") as mock_fitz:
@@ -84,9 +79,7 @@ class TestIntegrationScenarios:
         site_overrides_dynamic = {"dynamic.example.com": {"type": "dynamic"}}
         factory_dynamic = DownloaderFactory(site_overrides_dynamic)
 
-        with patch(
-            "regscraper_v2.downloaders.factory.PlaywrightDownloader"
-        ) as MockPlaywright:
+        with patch("regscraper_v2.downloaders.factory.PlaywrightDownloader") as MockPlaywright:
             factory_dynamic.create_downloader("https://dynamic.example.com/page")
             MockPlaywright.assert_called_once()
 
@@ -96,9 +89,7 @@ class TestIntegrationScenarios:
         factory = ExtractorFactory()
 
         # Test PDF detection
-        pdf_extractor = factory.create_extractor(
-            "https://example.com/doc.pdf", "application/pdf"
-        )
+        pdf_extractor = factory.create_extractor("https://example.com/doc.pdf", "application/pdf")
         assert pdf_extractor.can_handle(ContentType.PDF)
 
         # Test DOCX detection
@@ -109,9 +100,7 @@ class TestIntegrationScenarios:
         assert docx_extractor.can_handle(ContentType.DOCX)
 
         # Test HTML detection
-        html_extractor = factory.create_extractor(
-            "https://example.com/page.html", "text/html"
-        )
+        html_extractor = factory.create_extractor("https://example.com/page.html", "text/html")
         assert html_extractor.can_handle(ContentType.HTML)
 
     @pytest.mark.asyncio
@@ -177,9 +166,7 @@ class TestIntegrationScenarios:
 
         extractor = HtmlTextExtractor()
         html_content = "<html><body><h1>Title</h1><p>Content</p></body></html>"
-        download_result = DownloadResult(
-            html_content.encode(), "text/html", "https://example.com/page.html"
-        )
+        download_result = DownloadResult(html_content.encode(), "text/html", "https://example.com/page.html")
 
         with patch("trafilatura.extract", return_value=None):  # Force fallback
             result = await extractor.extract(download_result)

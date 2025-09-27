@@ -1,10 +1,12 @@
 """Tests for the new separated download and extraction functionality."""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+
 from regscraper.downloader.http_downloader import HttpDownloader
-from regscraper.extractors.pdf_extractor import PdfExtractor
 from regscraper.extractors.docx_extractor import DocxExtractor
+from regscraper.extractors.pdf_extractor import PdfExtractor
 
 
 class TestHttpDownloader:
@@ -31,9 +33,7 @@ class TestHttpDownloader:
             result = await downloader.download_file("https://example.com/test.pdf")
 
             assert result == test_content
-            mock_client_instance.get.assert_called_once_with(
-                "https://example.com/test.pdf"
-            )
+            mock_client_instance.get.assert_called_once_with("https://example.com/test.pdf")
 
     @pytest.mark.asyncio
     async def test_download_to_stream(self):

@@ -1,30 +1,29 @@
 """Comprehensive tests for regscraper_v2 architecture."""
 
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-import asyncio
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
-from regscraper_v2.interfaces import (
-    DownloadResult,
-    ExtractionResult,
-    ContentType,
-    Document,
-)
-from regscraper_v2.infrastructure.compliance import (
-    RobotsTxtChecker,
-    DomainThrottler,
-    ThrottledRobotsChecker,
-)
+from regscraper_v2.downloaders.factory import DownloaderFactory
 from regscraper_v2.downloaders.implementations import (
     HttpDownloader,
     PlaywrightDownloader,
 )
-from regscraper_v2.downloaders.factory import DownloaderFactory
+from regscraper_v2.extractors.factory import ExtractorFactory
 from regscraper_v2.extractors.implementations import (
-    PdfTextExtractor,
     DocxTextExtractor,
     HtmlTextExtractor,
+    PdfTextExtractor,
 )
-from regscraper_v2.extractors.factory import ExtractorFactory
+from regscraper_v2.infrastructure.compliance import (
+    DomainThrottler,
+    RobotsTxtChecker,
+)
+from regscraper_v2.interfaces import (
+    ContentType,
+    Document,
+    DownloadResult,
+    ExtractionResult,
+)
 
 
 class TestInterfaces:
@@ -33,9 +32,7 @@ class TestInterfaces:
     def test_download_result_creation(self):
         """Test DownloadResult data structure."""
         content = b"test content"
-        result = DownloadResult(
-            content, "application/pdf", "https://example.com/test.pdf"
-        )
+        result = DownloadResult(content, "application/pdf", "https://example.com/test.pdf")
 
         assert result.content == content
         assert result.content_type == "application/pdf"
@@ -129,18 +126,12 @@ class TestRobotsTxtChecker:
         checker = RobotsTxtChecker("TestBot/1.0")
 
         # Test parsing crawl delay
-        checker._parse_crawl_delay(
-            "example.com", "User-agent: *\nCrawl-delay: 5\nAllow: /"
-        )
+        checker._parse_crawl_delay("example.com", "User-agent: *\nCrawl-delay: 5\nAllow: /")
         assert checker.get_crawl_delay("https://example.com/test") == 5.0
 
         # Test minimum crawl delay enforcement
-        checker._parse_crawl_delay(
-            "fast.com", "User-agent: *\nCrawl-delay: 0.1\nAllow: /"
-        )
-        assert (
-            checker.get_crawl_delay("https://fast.com/test") == 0.5
-        )  # Should be at least 0.5
+        checker._parse_crawl_delay("fast.com", "User-agent: *\nCrawl-delay: 0.1\nAllow: /")
+        assert checker.get_crawl_delay("https://fast.com/test") == 0.5  # Should be at least 0.5
 
 
 class TestDomainThrottler:
@@ -213,18 +204,14 @@ class TestHttpDownloader:
             assert result.url == "https://example.com/test.pdf"
 
             # Verify compliance checking was called
-            mock_compliance.check_and_acquire.assert_called_once_with(
-                "https://example.com/test.pdf"
-            )
+            mock_compliance.check_and_acquire.assert_called_once_with("https://example.com/test.pdf")
             mock_compliance.release_throttle.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_robots_blocked_download(self):
         """Test download blocked by robots.txt."""
         mock_compliance = AsyncMock()
-        mock_compliance.check_and_acquire.side_effect = PermissionError(
-            "Blocked by robots.txt"
-        )
+        mock_compliance.check_and_acquire.side_effect = PermissionError("Blocked by robots.txt")
 
         downloader = HttpDownloader(mock_compliance)
 
@@ -240,9 +227,7 @@ class TestHttpDownloader:
         mock_compliance.check_and_acquire = AsyncMock()
         mock_compliance.release_throttle = Mock()
 
-        downloader = HttpDownloader(
-            mock_compliance, timeout=1
-        )  # Short timeout for testing
+        downloader = HttpDownloader(mock_compliance, timeout=1)  # Short timeout for testing
 
         with patch("httpx.AsyncClient") as mock_client:
             # Mock client that fails then succeeds
@@ -277,9 +262,7 @@ class TestPdfTextExtractor:
     async def test_pdf_text_extraction_success(self):
         """Test successful PDF text extraction."""
         extractor = PdfTextExtractor()
-        download_result = DownloadResult(
-            b"fake pdf content", "application/pdf", "https://example.com/test.pdf"
-        )
+        download_result = DownloadResult(b"fake pdf content", "application/pdf", "https://example.com/test.pdf")
 
         with patch("fitz.open") as mock_fitz_open:
             # Mock PDF document with extractable text
@@ -305,14 +288,9 @@ class TestPdfTextExtractor:
     async def test_pdf_ocr_fallback(self):
         """Test PDF OCR fallback when no direct text available."""
         extractor = PdfTextExtractor()
-        download_result = DownloadResult(
-            b"fake pdf content", "application/pdf", "https://example.com/test.pdf"
-        )
+        download_result = DownloadResult(b"fake pdf content", "application/pdf", "https://example.com/test.pdf")
 
-        with patch("fitz.open") as mock_fitz_open, patch.object(
-            extractor, "_ocr_page", return_value="OCR extracted text"
-        ) as mock_ocr:
-
+        with patch("fitz.open") as mock_fitz_open, patch.object(extractor, "_ocr_page", return_value="OCR extracted text") as mock_ocr:
             # Mock PDF page with no direct text (image-based)
             mock_page = Mock()
             mock_page.get_text.return_value = ""  # No direct text
@@ -352,9 +330,7 @@ class TestDocxTextExtractor:
             "https://example.com/test.docx",
         )
 
-        with patch(
-            "regscraper_v2.extractors.implementations.DocxDocument"
-        ) as mock_docx:
+        with patch("regscraper_v2.extractors.implementations.DocxDocument") as mock_docx:
             # Mock DOCX document with paragraphs
             mock_paragraph1 = Mock()
             mock_paragraph1.text = "First paragraph"
@@ -378,9 +354,7 @@ class TestDocxTextExtractor:
         extractor = DocxTextExtractor()
 
         # Test URL-based detection
-        download_result = DownloadResult(
-            b"fake doc content", "application/msword", "https://example.com/test.doc"
-        )
+        download_result = DownloadResult(b"fake doc content", "application/msword", "https://example.com/test.doc")
 
         with patch("mammoth.extract_raw_text") as mock_mammoth:
             mock_result = Mock()
@@ -409,16 +383,10 @@ class TestHtmlTextExtractor:
     async def test_html_text_extraction_trafilatura(self):
         """Test HTML text extraction using trafilatura."""
         extractor = HtmlTextExtractor()
-        html_content = (
-            "<html><body><h1>Title</h1><p>Content paragraph</p></body></html>"
-        )
-        download_result = DownloadResult(
-            html_content.encode(), "text/html", "https://example.com/page.html"
-        )
+        html_content = "<html><body><h1>Title</h1><p>Content paragraph</p></body></html>"
+        download_result = DownloadResult(html_content.encode(), "text/html", "https://example.com/page.html")
 
-        with patch(
-            "trafilatura.extract", return_value="Title\\nContent paragraph"
-        ) as mock_trafilatura:
+        with patch("trafilatura.extract", return_value="Title\\nContent paragraph") as mock_trafilatura:
             result = await extractor.extract(download_result)
 
             assert result.text == "Title\\nContent paragraph"
@@ -430,9 +398,7 @@ class TestHtmlTextExtractor:
         """Test HTML text extraction fallback when trafilatura fails."""
         extractor = HtmlTextExtractor()
         html_content = "<html><body><p>Simple content</p></body></html>"
-        download_result = DownloadResult(
-            html_content.encode(), "text/html", "https://example.com/page.html"
-        )
+        download_result = DownloadResult(html_content.encode(), "text/html", "https://example.com/page.html")
 
         with patch("trafilatura.extract", return_value=None):  # Trafilatura fails
             result = await extractor.extract(download_result)
@@ -465,9 +431,7 @@ class TestFactories:
         """Test extractor factory creates PDF extractor for PDF URLs."""
         factory = ExtractorFactory()
 
-        extractor = factory.create_extractor(
-            "https://example.com/doc.pdf", "application/pdf"
-        )
+        extractor = factory.create_extractor("https://example.com/doc.pdf", "application/pdf")
         assert isinstance(extractor, PdfTextExtractor)
 
     def test_extractor_factory_docx(self):
@@ -489,9 +453,7 @@ class TestFactories:
         assert isinstance(extractor, HtmlTextExtractor)
 
         # Test explicit HTML
-        extractor = factory.create_extractor(
-            "https://example.com/page.html", "text/html"
-        )
+        extractor = factory.create_extractor("https://example.com/page.html", "text/html")
         assert isinstance(extractor, HtmlTextExtractor)
 
 
