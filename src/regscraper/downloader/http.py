@@ -1,7 +1,7 @@
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from regscraper.infrastructure.compliance import ThrottledRobotsChecker
+from regscraper.infrastructure import ThrottledRobotsChecker
 from regscraper.interfaces import Downloader, DownloadResult
 
 

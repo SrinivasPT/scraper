@@ -1,5 +1,8 @@
-from regscraper.extractor import DocxTextExtractor, HtmlTextExtractor, PdfTextExtractor
 from regscraper.interfaces import ContentType, TextExtractor
+
+from .docx import DocxTextExtractor
+from .html import HtmlTextExtractor
+from .pdf import PdfTextExtractor
 
 
 class ExtractorFactory:

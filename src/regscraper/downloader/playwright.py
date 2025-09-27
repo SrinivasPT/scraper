@@ -1,6 +1,7 @@
+from playwright.async_api import async_playwright
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from regscraper.infrastructure.compliance import ThrottledRobotsChecker
+from regscraper.infrastructure import ThrottledRobotsChecker
 from regscraper.interfaces import Downloader, DownloadResult
 
 
@@ -20,8 +21,6 @@ class PlaywrightDownloader(Downloader):
     @retry(stop=stop_after_attempt(2), wait=wait_exponential(multiplier=1, min=3, max=30))
     async def download(self, url: str) -> DownloadResult:
         """Download dynamic content using Playwright."""
-        from playwright.async_api import async_playwright
-
         # Check robots.txt and acquire throttling lock
         await self._compliance_checker.check_and_acquire(url)
 

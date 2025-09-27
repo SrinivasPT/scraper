@@ -8,8 +8,8 @@ from regscraper.infrastructure import (
 )
 from regscraper.interfaces import Downloader
 
-from .HttpDownloader import HttpDownloader
-from .PlaywrightDownloader import PlaywrightDownloader
+from .http import HttpDownloader
+from .playwright import PlaywrightDownloader
 
 SiteConfig = dict[str, dict[str, Any]]
 

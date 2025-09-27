@@ -40,7 +40,7 @@ class PdfTextExtractor(TextExtractor):
 
         except Exception as e:
             msg = f"PDF text extraction failed: {e}"
-            raise RuntimeError(msg)
+            raise RuntimeError(msg) from e
 
         full_text = "\\n".join(text_parts).strip()
         return ExtractionResult(full_text, metadata)
@@ -49,11 +49,11 @@ class PdfTextExtractor(TextExtractor):
         """Check if this extractor can handle PDF content."""
         return content_type == ContentType.PDF
 
-    async def _ocr_page(self, page) -> str:
+    async def _ocr_page(self, page: "fitz.Page") -> str:
         """Perform OCR on a PDF page."""
         try:
             pix = page.get_pixmap(dpi=self.ocr_dpi)
             img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
             return pytesseract.image_to_string(img)
-        except Exception:
+        except (ValueError, OSError, pytesseract.TesseractError):
             return ""
