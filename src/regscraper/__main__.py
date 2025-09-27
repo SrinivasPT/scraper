@@ -12,7 +12,6 @@ from typing import Any
 # Import the main components
 from regscraper.downloader.factory import DownloaderFactory
 from regscraper.extractor.factory import ExtractorFactory
-from regscraper.infrastructure import DomainThrottler, RobotsTxtChecker, ThrottledRobotsChecker
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -24,14 +23,11 @@ async def scrape_url(
 ) -> None:
     """Scrape a URL and extract its content."""
     try:
-        # Set up infrastructure
-        robots_checker = RobotsTxtChecker(user_agent)
-        throttler = DomainThrottler(default_delay=delay)
-        ThrottledRobotsChecker(robots_checker, throttler)  # Create but don't store unused compliance
-
-        # Create factories
-        site_overrides: dict[str, dict[str, Any]] = {}
-        downloader_factory = DownloaderFactory(site_overrides)
+        # Create factories with SEC-specific throttling
+        site_overrides: dict[str, dict[str, Any]] = {"sec.gov": {"delay": delay, "concurrency": 1, "type": "static"}}
+        downloader_factory = DownloaderFactory(
+            site_overrides=site_overrides, default_delay=delay, default_concurrency=1, user_agent=user_agent
+        )
         extractor_factory = ExtractorFactory()
 
         # Download content

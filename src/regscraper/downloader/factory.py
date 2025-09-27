@@ -40,7 +40,7 @@ class DownloaderFactory:
     def create_downloader(self, url: str) -> Downloader:
         """Create appropriate downloader based on URL and site configuration."""
         domain = self._get_domain(url)
-        site_config = self._site_overrides.get(domain, {})
+        site_config = self._get_domain_config(domain)
 
         # Determine if site needs dynamic downloading
         site_type = site_config.get("type", "static")
@@ -48,6 +48,20 @@ class DownloaderFactory:
         if site_type == "dynamic":
             return PlaywrightDownloader(compliance_checker=self._compliance_checker, user_agent=self._user_agent)
         return HttpDownloader(compliance_checker=self._compliance_checker, user_agent=self._user_agent)
+
+    def _get_domain_config(self, domain: str) -> dict[str, Any]:
+        """Get configuration for a domain, falling back to conservative defaults if not found."""
+        domain_config = self._site_overrides.get(domain)
+        if domain_config is not None:
+            return domain_config
+
+        # Fall back to conservative defaults for unknown domains
+        conservative_defaults = self._site_overrides.get("*", {})
+        if conservative_defaults:
+            return conservative_defaults
+
+        # Final fallback if no wildcard is defined
+        return {"delay": 3.0, "concurrency": 1, "type": "static"}
 
     def _get_domain(self, url: str) -> str:
         """Extract domain from URL."""
