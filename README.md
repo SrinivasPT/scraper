@@ -226,3 +226,4 @@ This project is open source. Please check the license file for details.
 
 ## Test
 py -m pytest tests -v
+py -m pytest tests/integration.py::TestAsyncDownloading::test_async_sec_downloads_using_scrape_url -v

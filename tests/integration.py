@@ -25,6 +25,9 @@ class TestAsyncDownloading:
             "https://www.sec.gov/newsroom/press-releases/2025-126-sec-seeks-public-comment-improve-rules-residential-mortgage-backed-securities-asset-backed",
             "https://www.sec.gov/newsroom/press-releases/2025-125-sec-announces-departure-chief-operating-officer-ken-johnson",
             "https://www.sec.gov/newsroom/press-releases/2025-124-sec-announces-agenda-panelists-sec-cftc-roundtable-regulatory-harmonization-efforts",
+            "https://www.sec.gov/newsroom/press-releases/2025-121-sec-approves-generic-listing-standards-commodity-based-trust-shares",
+            "https://www.sec.gov/newsroom/press-releases/2025-115-james-moloney-named-director-division-corporation-finance",
+            "https://www.sec.gov/newsroom/press-releases/2025-103-sec-creates-task-force-tap-artificial-intelligence-enhanced-innovation-efficiency-across-agency",
         ]
 
     @pytest.mark.asyncio
